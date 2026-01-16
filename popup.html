@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { width: 350px; background-color: #0f172a; color: white; }
+    .scan-btn { background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%); }
+  </style>
+</head>
+<body class="p-4">
+  <div class="text-center mb-4">
+    <h1 class="text-xl font-black text-sky-400 italic uppercase">Sentry<span class="text-white">Scan</span></h1>
+    <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Extension Mode</p>
+  </div>
+
+  <div id="status" class="bg-slate-800 p-3 rounded-lg border border-slate-700 mb-4">
+    <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Current URL:</p>
+    <p id="currentUrl" class="text-xs truncate italic text-sky-200">Detecting...</p>
+  </div>
+
+  <button id="runBtn" class="scan-btn w-full py-3 rounded-xl font-black uppercase text-sm shadow-lg hover:opacity-90 transition-all">
+    Start Deep Audit
+  </button>
+
+  <div id="loading" class="hidden mt-4 text-center">
+    <i class="fa-solid fa-circle-notch animate-spin text-sky-500 text-2xl"></i>
+    <p class="text-[10px] text-slate-400 mt-2 animate-pulse">Engaging Neural Scan...</p>
+  </div>
+
+  <div id="miniResults" class="hidden mt-4 space-y-2 border-t border-slate-700 pt-4">
+    <div class="flex justify-between items-center">
+        <span class="text-xs font-bold">Security Score:</span>
+        <span id="score" class="text-xl font-black">--</span>
+    </div>
+    <div id="summary" class="text-[10px] text-slate-400 leading-tight"></div>
+    <button id="viewFull" class="w-full text-[10px] text-sky-400 font-bold mt-2 hover:underline uppercase tracking-tighter">View Full Trace Report</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

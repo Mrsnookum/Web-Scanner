@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "SentryScan Pro",
+  "version": "1.0",
+  "description": "One-click vulnerability and performance audit suite.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

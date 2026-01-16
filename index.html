@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentryScan | Cyber Performance & Security Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; overflow-x: hidden; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .scan-gradient { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+        .finding-card { transition: all 0.3s ease; border: 1px solid rgba(51, 65, 85, 0.5); }
+        .finding-card:hover { transform: translateX(8px); border-color: #38bdf8; background-color: rgba(30, 41, 59, 0.4); }
+        .glow-critical { box-shadow: 0 0 20px rgba(244, 63, 94, 0.2); border-left-color: #f43f5e !important; }
+        
+        .code-quote {
+            background: #0d1117;
+            border-left: 3px solid #38bdf8;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: #94a3b8;
+            overflow-x: auto;
+            position: relative;
+        }
+        .code-label { position: absolute; top: 2px; right: 10px; font-size: 8px; text-transform: uppercase; color: #475569; font-weight: bold; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300">
+        <div class="bg-rose-600 text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 border border-rose-400">
+            <i class="fa-solid fa-triangle-exclamation text-xl text-white"></i>
+            <span id="toastMsg" class="font-bold text-sm"></span>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto">
+        <header class="flex justify-between items-center mb-10 text-white">
+            <div>
+                <h1 class="text-3xl font-black text-sky-400 italic uppercase tracking-tighter">
+                    <i class="fa-solid fa-gauge-high mr-2 text-sky-500"></i>Sentry<span class="text-white">Scan</span>
+                </h1>
+                <p class="text-slate-500 text-xs tracking-[0.2em] font-bold uppercase italic">Full-Spectrum Performance & Cyber-Audit Suite</p>
+            </div>
+            <div id="statusBadge" class="px-3 py-1 rounded bg-slate-800 text-[10px] font-bold border border-slate-700 text-slate-300 tracking-widest uppercase flex items-center">
+                <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span> 
+                <span id="badgeText">System Ready</span>
+            </div>
+        </header>
+
+        <section class="scan-gradient p-6 rounded-2xl border border-slate-800 shadow-2xl mb-10">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase font-black text-sky-500 tracking-widest italic">Host Alpha (Primary)</label>
+                    <input type="text" id="targetA" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white focus:ring-2 focus:ring-sky-500 outline-none transition-all" placeholder="example.com">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase font-black text-pink-500 tracking-widest italic">Host Bravo (Comparison)</label>
+                    <input type="text" id="targetB" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-3 px-4 text-white focus:ring-2 focus:ring-pink-500 outline-none transition-all" placeholder="competitor.com">
+                </div>
+            </div>
+            <button onclick="executeScan()" id="scanBtn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-black py-4 rounded-xl shadow-lg transition-all uppercase tracking-widest">
+                Run Neural Scan & Latency Test
+            </button>
+        </section>
+
+        <div id="loader" class="hidden text-center py-20">
+            <div class="relative inline-block mb-6">
+                <div class="absolute inset-0 rounded-full blur-xl bg-sky-500/20 animate-pulse"></div>
+                <div class="relative inline-block animate-spin rounded-full h-16 w-16 border-4 border-sky-500 border-t-transparent"></div>
+            </div>
+            <p id="loaderStatus" class="text-slate-400 animate-pulse font-mono text-xs uppercase tracking-tighter">Initializing Neural Link...</p>
+        </div>
+
+        <div id="dashboardActions" class="hidden flex justify-end mb-4 gap-4">
+            <button onclick="exportToCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold py-2 px-4 rounded border border-slate-600 transition-all flex items-center gap-2 uppercase tracking-widest italic">
+                <i class="fa-solid fa-file-export"></i> Download CSV Audit
+            </button>
+        </div>
+
+        <main id="resultsPanel" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
+            
+            <div id="panelA" class="space-y-6">
+                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 relative overflow-hidden shadow-inner">
+                    <h2 id="hostA" class="text-xs font-bold text-sky-400 mono italic mb-4 truncate italic"></h2>
+                    <div class="grid grid-cols-2 gap-4 items-center">
+                        <div class="h-32 flex items-center justify-center">
+                            <canvas id="chartA"></canvas>
+                        </div>
+                        <div class="space-y-2">
+                            <div id="scoreA" class="text-6xl font-black italic text-white tracking-tighter leading-none">--</div>
+                            <div id="labelA" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Score</div>
+                            <div class="text-[9px] text-slate-500 mono leading-tight">Latency: <span id="latA" class="text-white font-bold"></span>ms</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-4 text-[9px] text-slate-500 italic mono border-t border-slate-700 pt-4">
+                        <span id="ipA"></span> • <span id="locA"></span>
+                    </div>
+                </div>
+                <div id="findingsA" class="space-y-4"></div>
+            </div>
+
+            <div id="panelB" class="space-y-6 hidden">
+                <div class="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 relative overflow-hidden shadow-inner">
+                    <h2 id="hostB" class="text-xs font-bold text-pink-400 mono italic mb-4 truncate italic"></h2>
+                    <div class="grid grid-cols-2 gap-4 items-center">
+                        <div class="h-32 flex items-center justify-center">
+                            <canvas id="chartB"></canvas>
+                        </div>
+                        <div class="space-y-2">
+                            <div id="scoreB" class="text-6xl font-black italic text-white tracking-tighter leading-none">--</div>
+                            <div id="labelB" class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Score</div>
+                            <div class="text-[9px] text-slate-500 mono leading-tight">Latency: <span id="latB" class="text-white font-bold"></span>ms</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-4 text-[9px] text-slate-500 italic mono border-t border-slate-700 pt-4">
+                        <span id="ipB"></span> • <span id="locB"></span>
+                    </div>
+                </div>
+                <div id="findingsB" class="space-y-4"></div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylI6FTqPo9O3PZUx7ogCl5FBSpvxdsAglbNA6Aaxu8uDNDJ_A2Jbtklzem7MTVteY/exec'; 
+        let lastScanData = { A: null, B: null };
+        let charts = { A: null, B: null };
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = m;
+            t.classList.remove('translate-x-full');
+            setTimeout(() => t.classList.add('translate-x-full'), 5000);
+        }
+
+        async function executeScan() {
+            const urlA = document.getElementById('targetA').value;
+            const urlB = document.getElementById('targetB').value;
+            const btn = document.getElementById('scanBtn');
+            const loader = document.getElementById('loader');
+            const statusText = document.getElementById('loaderStatus');
+            const resultsPanel = document.getElementById('resultsPanel');
+            const badge = document.getElementById('badgeText');
+
+            if (!urlA) return showToast("Target Alpha is required.");
+
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            resultsPanel.classList.add('hidden');
+            document.getElementById('dashboardActions').classList.add('hidden');
+            document.getElementById('panelB').className = urlB ? "space-y-6 block" : "hidden";
+            badge.innerText = "Scanning Link...";
+
+            const statuses = ["Mapping DNS...", "Probing Cloud Metadata...", "Simulating XSS...", "Benchmarking Performance..."];
+            let sIdx = 0;
+            const statusInt = setInterval(() => { statusText.innerText = statuses[sIdx++ % statuses.length]; }, 1000);
+
+            try {
+                const promises = [fetchScan(urlA)];
+                if (urlB) promises.push(fetchScan(urlB));
+                
+                const results = await Promise.all(promises);
+                clearInterval(statusInt);
+
+                lastScanData.A = results[0];
+                renderResults('A', results[0], '#38bdf8');
+
+                if (results[1]) {
+                    lastScanData.B = results[1];
+                    renderResults('B', results[1], '#f472b6');
+                }
+
+                resultsPanel.classList.remove('hidden');
+                document.getElementById('dashboardActions').classList.remove('hidden');
+                badge.innerText = "Audit Secure";
+                window.scrollTo({ top: resultsPanel.offsetTop - 50, behavior: 'smooth' });
+
+            } catch (err) {
+                clearInterval(statusInt);
+                showToast(err.message);
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
+        }
+
+        async function fetchScan(url) {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ url }) });
+            const data = await res.json();
+            if (data.error) throw new Error(`${url}: ${data.error}`);
+            return data;
+        }
+
+        function renderResults(id, data, themeColor) {
+            document.getElementById(`host${id}`).innerText = data.target;
+            document.getElementById(`score${id}`).innerText = data.score;
+            document.getElementById(`score${id}`).style.color = themeColor;
+            document.getElementById(`lat${id}`).innerText = data.performance.latencyMs;
+            document.getElementById(`ip${id}`).innerText = "IP: " + data.metadata.ip;
+            document.getElementById(`loc${id}`).innerText = data.metadata.location;
+
+            // Generate Latency Chart
+            const ctx = document.getElementById(`chart${id}`).getContext('2d');
+            if(charts[id]) charts[id].destroy();
+            charts[id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [data.performance.latencyMs, Math.max(0, 1500 - data.performance.latencyMs)],
+                        backgroundColor: [themeColor, 'rgba(30, 41, 59, 0.5)'],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: 270,
+                    }]
+                },
+                options: { cutout: '85%', plugins: { tooltip: { enabled: false }, legend: { display: false } } }
+            });
+
+            // Findings Rendering
+            const container = document.getElementById(`findings${id}`);
+            container.innerHTML = '';
+            data.findings.forEach(issue => {
+                const colors = { 'Critical': 'border-rose-500 text-rose-400', 'High': 'border-orange-500 text-orange-400', 'Medium': 'border-amber-500 text-amber-400', 'Low': 'border-sky-500 text-sky-400' };
+                const card = document.createElement('div');
+                card.className = `finding-card p-5 rounded-xl border-l-4 bg-slate-800/20 ${colors[issue.severity]} ${issue.severity === 'Critical' ? 'glow-critical' : ''}`;
+                
+                let snippetHtml = issue.snippet ? `<div class="code-quote"><span class="code-label">Raw Trace</span><pre class="whitespace-pre-wrap leading-tight"><code>${escapeHtml(issue.snippet)}</code></pre></div>` : '';
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2 uppercase tracking-tighter font-black text-xs">
+                        <span>${issue.title}</span><span class="text-[7px] border px-1 rounded">${issue.severity}</span>
+                    </div>
+                    <p class="text-slate-500 text-[10px] leading-relaxed italic mb-3">${issue.description}</p>
+                    ${snippetHtml}
+                    <div class="bg-slate-900/40 p-3 rounded border border-slate-700/50">
+                        <p class="text-[8px] text-slate-400 uppercase font-black mb-1 italic tracking-widest">Remediation</p>
+                        <p class="text-sky-300 text-[10px] mono">${issue.fix}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function exportToCSV() {
+            if (!lastScanData.A) return;
+            let findings = lastScanData.A.findings.map(f => ({...f, target: lastScanData.A.target}));
+            if (lastScanData.B) findings = findings.concat(lastScanData.B.findings.map(f => ({...f, target: lastScanData.B.target})));
+
+            const headers = ["Host", "Finding", "Severity", "Risk", "Fix"];
+            const rows = findings.map(f => [f.target, f.title, f.severity, f.description.replace(/,/g, ";"), f.fix.replace(/,/g, ";")]);
+
+            let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", `SentryScan_Report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.click();
+        }
+    </script>
+</body>
+</html>
